@@ -1,0 +1,38 @@
+[
+  {
+    "id": "circular_47_bcs",
+    "title": "৪৭তম বিসিএস ক্যাডার নিয়োগ বিজ্ঞপ্তি",
+    "organization": "বাংলাদেশ সরকারি কর্ম কমিশন (BPSC)",
+    "publishDate": "২০২৬-০৫-১৫",
+    "pdfUrl": "https://raw.githubusercontent.com/nadim-anamul/shera-viva-json/master/pdfs/circular_47_bcs.pdf",
+    "fileSize": "৩.৫ এমবি",
+    "description": "বিভিন্ন ক্যাডারে ৩,৪৬০টি শূন্য পদের বিপরীতে নিয়োগ বিজ্ঞপ্তি প্রকাশ করেছে পিএসসি। আবেদনের শেষ তারিখ ৩০ জুন ২০২৬।"
+  },
+  {
+    "id": "circular_primary_2026",
+    "title": "সরকারি প্রাথমিক বিদ্যালয় সহকারী শিক্ষক নিয়োগ বিজ্ঞপ্তি ২০২৬",
+    "organization": "প্রাথমিক শিক্ষা অধিদপ্তর (DPE)",
+    "publishDate": "২০২৬-০৪-১০",
+    "pdfUrl": "https://raw.githubusercontent.com/nadim-anamul/shera-viva-json/master/pdfs/circular_primary_2026.pdf",
+    "fileSize": "১.৮ এমবি",
+    "description": "ঢাকা ও চট্টগ্রাম বিভাগের সহকারী শিক্ষক নিয়োগের জন্য নতুন বিজ্ঞপ্তি। বয়সসীমা ৩০ বছর (মুক্তিযোদ্ধা কোটায় ৩২ বছর)।"
+  },
+  {
+    "id": "circular_combined_bank_2026",
+    "title": "১০ ব্যাংক ও ১টি আর্থিক প্রতিষ্ঠানে সিনিয়র অফিসার নিয়োগ বিজ্ঞপ্তি",
+    "organization": "ব্যাংকার্স সিলেকশন কমিটি (BSCC)",
+    "publishDate": "২০২৬-০৩-০৫",
+    "pdfUrl": "https://raw.githubusercontent.com/nadim-anamul/shera-viva-json/master/pdfs/circular_combined_bank_2026.pdf",
+    "fileSize": "২.৭ এমবি",
+    "description": "সম্মিলিত ১০টি ব্যাংক ও ১টি আর্থিক প্রতিষ্ঠানে মোট ৯২৮টি শূন্য পদে জনবল নিয়োগের প্রতিযোগিতামূলক পরীক্ষা।"
+  },
+  {
+    "id": "circular_railway_2026",
+    "title": "বাংলাদেশ রেলওয়ে সহকারী স্টেশন মাস্টার নিয়োগ বিজ্ঞপ্তি ২০২৬",
+    "organization": "বাংলাদেশ রেলওয়ে (BR)",
+    "publishDate": "২০২৬-০৫-০২",
+    "pdfUrl": "https://railway.portal.gov.bd/sites/default/files/files/railway.portal.gov.bd/notices/circular_asm_2026.pdf",
+    "fileSize": "১.৫ এমবি",
+    "description": "সহকারী স্টেশন মাস্টার পদে মোট ৪৫০ জনকে নিয়োগ দেওয়া হবে। আবেদনের শেষ তারিখ ৩০ মে ২০২৬।"
+  }
+]

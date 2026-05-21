@@ -1,0 +1,30 @@
+[
+  {
+    "id": "BCS",
+    "title": "বিসিএস ভাইভা লাইব্রেরি",
+    "subtitle": "BCS Cadre Viva Library",
+    "description": "পররাষ্ট্র, প্রশাসন, পুলিশ, কর ও শুল্ক ক্যাডারে সুপারিশপ্রাপ্ত প্রার্থীদের রিয়েল ভাইভা ডায়ালগ এবং বোর্ড বিশ্লেষণ।",
+    "stats": "৩৬+ সফল অভিজ্ঞতা",
+    "icon": "school_rounded",
+    "gradientStart": "0xFF0F766E",
+    "gradientEnd": "0xFF134E4A",
+    "dataUrl": "https://raw.githubusercontent.com/nadim-anamul/shera-viva-json/master/bcs_viva_library.json",
+    "isActive": true,
+    "yearFilterLabel": "বিসিএস সংস্করণ",
+    "choicesFilterLabel": "ক্যাডার পছন্দ"
+  },
+  {
+    "id": "Primary",
+    "title": "প্রাথমিক শিক্ষক ভাইভা লাইব্রেরি",
+    "subtitle": "Primary Teacher Viva Library",
+    "description": "সহকারী শিক্ষক পদে সুপারিশপ্রাপ্ত সফল চাকরিপ্রার্থীদের জেলা-ভিত্তিক ও বোর্ড-ভিত্তিক রিয়েল ভাইভা প্রশ্নোত্তর।",
+    "stats": "৮১+ সফল অভিজ্ঞতা",
+    "icon": "menu_book_rounded",
+    "gradientStart": "0xFF1E3A8A",
+    "gradientEnd": "0xFF1E40AF",
+    "dataUrl": "https://raw.githubusercontent.com/nadim-anamul/shera-viva-json/master/primary_viva_library.json",
+    "isActive": true,
+    "yearFilterLabel": "বছর",
+    "districtFilterLabel": "জেলা"
+  }
+]
