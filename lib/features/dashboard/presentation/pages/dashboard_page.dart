@@ -9,11 +9,15 @@ import '../../../library/presentation/pages/pdf_viewer_page.dart';
 import '../../../library/presentation/providers/viva_library_provider.dart';
 import '../widgets/dashboard_feature_card.dart';
 
+final dashboardLayoutProvider = StateProvider<bool>((ref) => true); // true = grid (default), false = list
+
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isGridView = ref.watch(dashboardLayoutProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: CustomScrollView(
@@ -54,98 +58,423 @@ class DashboardPage extends ConsumerWidget {
           ),
           
           // 2. Main Scrollable Dashboard Content
-          SliverPadding(
-            padding: const EdgeInsets.only(left: 18, right: 18, bottom: 24, top: 12),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Section: Latest Circulars & Results Updates (Slider)
-                _SectionTitle(
-                  title: 'বিজ্ঞপ্তি ও ফলাফল আপডেট',
-                  actionLabel: 'সব দেখুন',
-                  onAction: () {
-                    ref.read(libraryActiveTabProvider.notifier).state = 1;
-                    context.push(AppRoutes.vivaLibrary);
-                  },
-                ),
-                const SizedBox(height: 8),
-                const _UpdatesSlider(),
-                const SizedBox(height: 24),
-
-                // Section 1: Viva Practice
-                _SectionTitle(
-                  title: 'ভাইভা প্র্যাকটিস',
-                  actionLabel: 'ফর্ম পূরণ করুন',
-                  onAction: () => context.push(AppRoutes.vivaForm),
-                ),
-                const SizedBox(height: 8),
-                DashboardFeatureCard(
-                  title: 'AI Conversation',
-                  subtitle: 'এআই-এর সাথে সরাসরি মক ভাইভা অনুশীলন',
-                  icon: Icons.smart_toy_outlined,
-                  onTap: () => context.push(AppRoutes.aiConversation),
-                  gradientColors: const [Color(0xFF0F766E), Color(0xFF0D9488)],
-                ),
-                DashboardFeatureCard(
-                  title: 'Live Viva',
-                  subtitle: 'বিষয়ভিত্তিক লাইভ ভাইভা সেশন',
-                  icon: Icons.videocam_outlined,
-                  onTap: () => context.push(AppRoutes.liveViva),
-                  gradientColors: const [Color(0xFF0F766E), Color(0xFF14B8A6)],
-                ),
-                DashboardFeatureCard(
-                  title: 'Report & Analysis',
-                  subtitle: 'দক্ষতা ও দুর্বলতা বিশ্লেষণ রিপোর্ট',
-                  icon: Icons.analytics_outlined,
-                  onTap: () => context.push(AppRoutes.reportAnalysis),
-                  gradientColors: const [Color(0xFF0D9488), Color(0xFF2DD4BF)],
-                ),
-                const SizedBox(height: 20),
-                
-                // Section 2: Library & Learning
-                const _SectionTitle(title: 'লাইব্রেরি ও প্রস্তুতি'),
-                const SizedBox(height: 8),
-                DashboardFeatureCard(
-                  title: 'Viva Library',
-                  subtitle: 'বিষয়ভিত্তিক নমুনা ও পূর্ববর্তী প্রশ্নব্যাংক',
-                  icon: Icons.library_books_outlined,
-                  onTap: () => context.push(AppRoutes.vivaLibrary),
-                  gradientColors: const [Color(0xFFB45309), Color(0xFFD97706)],
-                ),
-                DashboardFeatureCard(
-                  title: 'Viva Advice',
-                  subtitle: 'ভাইভাতে সফল হওয়ার কৌশল ও পরামর্শ',
-                  icon: Icons.tips_and_updates_outlined,
-                  onTap: () => context.push(AppRoutes.vivaAdvice),
-                  gradientColors: const [Color(0xFFD97706), Color(0xFFF59E0B)],
-                ),
-                DashboardFeatureCard(
-                  title: 'Viva Rules',
-                  subtitle: 'ভাইভা বোর্ডের আচরণবিধি ও পোশাক নির্বাচন',
-                  icon: Icons.gavel_outlined,
-                  onTap: () => context.push(AppRoutes.vivaRules),
-                  gradientColors: const [Color(0xFFB45309), Color(0xFFF59E0B)],
-                ),
-                const SizedBox(height: 20),
-                
-                // Section 3: Archive & History
-                const _SectionTitle(title: 'আর্কাইভ'),
-                const SizedBox(height: 8),
-                DashboardFeatureCard(
-                  title: 'Your Viva History',
-                  subtitle: 'পূর্ববর্তী সেশন রেকর্ড, স্কোর এবং অগ্রগতি ট্র্যাকার',
-                  icon: Icons.history_outlined,
-                  onTap: () => context.push(AppRoutes.vivaHistory),
-                  gradientColors: const [Color(0xFF475569), Color(0xFF64748B)],
-                ),
-              ]),
-            ),
-          ),
+          isGridView
+              ? _buildGridDashboard(context, ref)
+              : _buildListDashboard(context, ref),
         ],
       ),
     );
   }
 
+  Widget _buildListDashboard(BuildContext context, WidgetRef ref) {
+    return SliverPadding(
+      padding: const EdgeInsets.only(left: 18, right: 18, bottom: 24, top: 12),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          // Section: Latest Circulars & Results Updates (Slider)
+          _SectionTitle(
+            title: 'বিজ্ঞপ্তি ও ফলাফল আপডেট',
+            actionLabel: 'সব দেখুন',
+            onAction: () {
+              context.push(AppRoutes.jobUpdates);
+            },
+          ),
+          const SizedBox(height: 8),
+          const _UpdatesSlider(),
+          const SizedBox(height: 24),
+
+          // Section 1: Viva Practice
+          _SectionTitle(
+            title: 'ভাইভা প্র্যাকটিস',
+            actionLabel: 'ফর্ম পূরণ করুন',
+            onAction: () => context.push(AppRoutes.vivaForm),
+          ),
+          const SizedBox(height: 8),
+          DashboardFeatureCard(
+            title: 'AI Conversation',
+            subtitle: 'এআই-এর সাথে সরাসরি মক ভাইভা অনুশীলন',
+            icon: Icons.smart_toy_outlined,
+            onTap: () => context.push(AppRoutes.aiConversation),
+            gradientColors: const [Color(0xFF0F766E), Color(0xFF0D9488)],
+          ),
+          DashboardFeatureCard(
+            title: 'Live Viva',
+            subtitle: 'বিষয়ভিত্তিক লাইভ ভাইভা সেশন',
+            icon: Icons.videocam_outlined,
+            onTap: () => context.push(AppRoutes.liveViva),
+            gradientColors: const [Color(0xFF0F766E), Color(0xFF14B8A6)],
+          ),
+          DashboardFeatureCard(
+            title: 'Report & Analysis',
+            subtitle: 'দক্ষতা ও দুর্বলতা বিশ্লেষণ রিপোর্ট',
+            icon: Icons.analytics_outlined,
+            onTap: () => context.push(AppRoutes.reportAnalysis),
+            gradientColors: const [Color(0xFF0D9488), Color(0xFF2DD4BF)],
+          ),
+          const SizedBox(height: 20),
+          
+          // Section 2: Library & Learning
+          const _SectionTitle(title: 'লাইব্রেরি ও প্রস্তুতি'),
+          const SizedBox(height: 8),
+          DashboardFeatureCard(
+            title: 'Viva Library',
+            subtitle: 'বিষয়ভিত্তিক নমুনা ও পূর্ববর্তী প্রশ্নব্যাংক',
+            icon: Icons.library_books_outlined,
+            onTap: () => context.push(AppRoutes.vivaLibrary),
+            gradientColors: const [Color(0xFFB45309), Color(0xFFD97706)],
+          ),
+          DashboardFeatureCard(
+            title: 'Viva Advice',
+            subtitle: 'ভাইভাতে সফল হওয়ার কৌশল ও পরামর্শ',
+            icon: Icons.tips_and_updates_outlined,
+            onTap: () => context.push(AppRoutes.vivaAdvice),
+            gradientColors: const [Color(0xFFD97706), Color(0xFFF59E0B)],
+          ),
+          DashboardFeatureCard(
+            title: 'Viva Rules',
+            subtitle: 'ভাইভা বোর্ডের আচরণবিধি ও পোশাক নির্বাচন',
+            icon: Icons.gavel_outlined,
+            onTap: () => context.push(AppRoutes.vivaRules),
+            gradientColors: const [Color(0xFFB45309), Color(0xFFF59E0B)],
+          ),
+          const SizedBox(height: 20),
+          
+          // Section 3: Archive & History
+          const _SectionTitle(title: 'আর্কাইভ'),
+          const SizedBox(height: 8),
+          DashboardFeatureCard(
+            title: 'Your Viva History',
+            subtitle: 'পূর্ববর্তী সেশন রেকর্ড, স্কোর এবং অগ্রগতি ট্র্যাকার',
+            icon: Icons.history_outlined,
+            onTap: () => context.push(AppRoutes.vivaHistory),
+            gradientColors: const [Color(0xFF475569), Color(0xFF64748B)],
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildGridDashboard(BuildContext context, WidgetRef ref) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    // Taller aspect ratio for narrow viewports to avoid text overflows; wider for tablets to prevent blockiness
+    final double gridAspectRatio = screenWidth < 360 ? 1.12 : (screenWidth > 600 ? 1.38 : 1.22);
+
+    return SliverPadding(
+      padding: const EdgeInsets.only(left: 18, right: 18, bottom: 24, top: 12),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate([
+          // Section: Latest Updates (Full width Slider)
+          _SectionTitle(
+            title: 'বিজ্ঞপ্তি ও ফলাফল আপডেট',
+            actionLabel: 'সব দেখুন',
+            onAction: () {
+              context.push(AppRoutes.jobUpdates);
+            },
+          ),
+          const SizedBox(height: 8),
+          const _UpdatesSlider(),
+          const SizedBox(height: 24),
+
+          // Section 1: ভাইভা প্র্যাকটিস (AI, Live, Report, and Stats) -> 2 Column Grid
+          _SectionTitle(
+            title: 'ভাইভা প্র্যাকটিস',
+            actionLabel: 'ফর্ম পূরণ করুন',
+            onAction: () => context.push(AppRoutes.vivaForm),
+          ),
+          const SizedBox(height: 10),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: gridAspectRatio,
+            children: [
+              _buildGridCard(
+                title: 'AI Conversation',
+                subtitle: 'এআই মক ভাইভা অনুশীলন',
+                acronym: 'AI',
+                icon: Icons.smart_toy_outlined,
+                brandColor: const Color(0xFF0F766E),
+                badgeText: 'AI Live',
+                onTap: () => context.push(AppRoutes.aiConversation),
+              ),
+              _buildGridCard(
+                title: 'Live Viva',
+                subtitle: 'লাইভ ভাইভা সেশন',
+                acronym: 'LV',
+                icon: Icons.videocam_outlined,
+                brandColor: const Color(0xFF0D9488),
+                badgeText: 'LIVE',
+                onTap: () => context.push(AppRoutes.liveViva),
+              ),
+              _buildGridCard(
+                title: 'Report & Analysis',
+                subtitle: 'দক্ষতা বিশ্লেষণ রিপোর্ট',
+                acronym: 'RP',
+                icon: Icons.analytics_outlined,
+                brandColor: const Color(0xFF047857),
+                onTap: () => context.push(AppRoutes.reportAnalysis),
+              ),
+              _buildStatsGridCard(ref),
+            ],
+          ),
+          const SizedBox(height: 28),
+
+          // Section 2: লাইব্রেরি ও প্রস্তুতি -> 2 Column Grid
+          const _SectionTitle(title: 'লাইব্রেরি ও প্রস্তুতি'),
+          const SizedBox(height: 10),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: gridAspectRatio,
+            children: [
+              _buildGridCard(
+                title: 'Viva Library',
+                subtitle: 'প্রশ্নব্যাংক ও নমুনা',
+                acronym: 'LB',
+                icon: Icons.library_books_outlined,
+                brandColor: const Color(0xFFB45309),
+                badgeText: 'NEW',
+                onTap: () => context.push(AppRoutes.vivaLibrary),
+              ),
+              _buildGridCard(
+                title: 'Viva Advice',
+                subtitle: 'কৌশল ও পরামর্শ',
+                acronym: 'AD',
+                icon: Icons.tips_and_updates_outlined,
+                brandColor: const Color(0xFFD97706),
+                onTap: () => context.push(AppRoutes.vivaAdvice),
+              ),
+              _buildGridCard(
+                title: 'Viva Rules',
+                subtitle: 'আচরণবিধি ও পোশাক',
+                acronym: 'RL',
+                icon: Icons.gavel_outlined,
+                brandColor: const Color(0xFFC2410C),
+                onTap: () => context.push(AppRoutes.vivaRules),
+              ),
+              _buildGridCard(
+                title: 'History Archive',
+                subtitle: 'ভাইভা আর্কাইভ ও রেকর্ড',
+                acronym: 'HS',
+                icon: Icons.history_outlined,
+                brandColor: const Color(0xFF475569),
+                onTap: () => context.push(AppRoutes.vivaHistory),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildGridCard({
+    required String title,
+    required String subtitle,
+    required String acronym,
+    required IconData icon,
+    required Color brandColor,
+    required VoidCallback onTap,
+    String? badgeText,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Top Row: Circular Acronym Avatar & Soft Icon
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            height: 38,
+                            width: 38,
+                            decoration: BoxDecoration(
+                              color: brandColor.withOpacity(0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                acronym,
+                                style: TextStyle(
+                                  color: brandColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            icon,
+                            color: brandColor.withOpacity(0.6),
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                      // Bottom Column: Text info
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Color(0xFF1E293B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Floating Badge on top right of the card
+            if (badgeText != null)
+              Positioned(
+                top: 0,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: badgeText.toLowerCase() == 'live' 
+                        ? const Color(0xFFEF4444) // Bright red for live
+                        : const Color(0xFF0F766E), // Deep teal for others
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsGridCard(WidgetRef ref) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE6F4EA),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.trending_up_rounded,
+                    color: Color(0xFF137333),
+                    size: 16,
+                  ),
+                ),
+                const Text(
+                  'অগ্রগতি',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  '৮৫%',
+                  style: TextStyle(
+                    color: Color(0xFF1E293B),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'প্রস্তুতি স্কোর (BCS)',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 8.5,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
+    final isGridView = ref.watch(dashboardLayoutProvider);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -158,19 +487,40 @@ class DashboardPage extends ConsumerWidget {
             letterSpacing: 0.5,
           ),
         ),
-        IconButton(
-          onPressed: () async {
-            await ref.read(authControllerProvider.notifier).signOut();
-            if (context.mounted) {
-              context.go(AppRoutes.login);
-            }
-          },
-          icon: const Icon(Icons.logout_rounded, color: Colors.white),
-          tooltip: 'লগআউট',
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white.withOpacity(0.15),
-            padding: const EdgeInsets.all(10),
-          ),
+        Row(
+          children: [
+            // Layout switcher toggle button
+            IconButton(
+              onPressed: () {
+                ref.read(dashboardLayoutProvider.notifier).state = !isGridView;
+              },
+              icon: Icon(
+                isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              tooltip: isGridView ? 'তালিকা ভিউ' : 'গ্রিড ভিউ',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.15),
+                padding: const EdgeInsets.all(10),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () async {
+                await ref.read(authControllerProvider.notifier).signOut();
+                if (context.mounted) {
+                  context.go(AppRoutes.login);
+                }
+              },
+              icon: const Icon(Icons.logout_rounded, color: Colors.white),
+              tooltip: 'লগআউট',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.15),
+                padding: const EdgeInsets.all(10),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -238,8 +588,7 @@ class DashboardPage extends ConsumerWidget {
         ),
       ],
     );
-  }
-}
+  }}
 
 class _CurvedHeader extends StatelessWidget {
   const _CurvedHeader();
@@ -624,14 +973,13 @@ class _SliderCardState extends State<_SliderCard> {
   Widget build(BuildContext context) {
     final item = widget.item;
     
-    // Tag specific styling
-    final Color tagBgColor = item.isCircular 
-        ? const Color(0xFFECFDF5) // soft light green
-        : const Color(0xFFFFF7ED); // soft light orange/amber
-    final Color tagTextColor = item.isCircular 
-        ? const Color(0xFF047857) // emerald green
-        : const Color(0xFFC2410C); // deep orange
-    final String tagText = item.isCircular ? 'বিজ্ঞপ্তি' : 'ফলাফল';
+    // Solid Header Banner Styling (inspired bypremium model test look)
+    final Color headerBgColor = item.isCircular 
+        ? const Color(0xFF0F766E) // Solid Deep Teal
+        : const Color(0xFFD97706); // Solid Bright Amber/Orange
+    final String headerText = item.isCircular 
+        ? '📰 সার্কুলার / বিজ্ঞপ্তি' 
+        : '📢 পরীক্ষার ফলাফল আপডেট';
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -664,7 +1012,7 @@ class _SliderCardState extends State<_SliderCard> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isHovered 
-                    ? tagTextColor.withOpacity(0.3) 
+                    ? headerBgColor.withOpacity(0.3) 
                     : const Color(0xFFE2E8F0),
                 width: _isHovered ? 1.5 : 1.0,
               ),
@@ -676,112 +1024,122 @@ class _SliderCardState extends State<_SliderCard> {
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => PdfViewerPage(
-                        title: item.title,
-                        pdfUrl: item.pdfUrl,
-                        organization: item.organization,
-                        publishDate: item.publishDate,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Solid Curved Category Header Banner
+                  Container(
+                    height: 34,
+                    color: headerBgColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      headerText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Row: Tag & Date
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: tagBgColor,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              tagText,
-                              style: TextStyle(
-                                color: tagTextColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                  ),
+                  // 2. White Details Body
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (context) => PdfViewerPage(
+                                title: item.title,
+                                pdfUrl: item.pdfUrl,
+                                organization: item.organization,
+                                publishDate: item.publishDate,
                               ),
                             ),
-                          ),
-                          Text(
-                            item.publishDate,
-                            style: const TextStyle(
-                              color: Color(0xFF94A3B8),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      
-                      // Title
-                      Expanded(
-                        child: Text(
-                          item.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
-                            height: 1.35,
+                          );
+                        },
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(15),
+                          bottomRight: Radius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Bold Title
+                              Text(
+                                item.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E293B),
+                                  height: 1.35,
+                                ),
+                              ),
+                              // Bottom Row with Calendar, Organization & PDF Size
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.business_center_outlined,
+                                    size: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Expanded(
+                                    child: Text(
+                                      item.organization.split('(').first.trim(),
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF64748B),
+                                        fontSize: 9.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 11,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    item.publishDate,
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 9.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    size: 12,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    item.fileSize,
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      
-                      // Bottom Row: Org details & File icon
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.business_center_outlined,
-                            size: 13,
-                            color: Color(0xFF64748B),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              item.organization.split('(').first.trim(),
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.picture_as_pdf_outlined,
-                            size: 13,
-                            color: Color(0xFFEF4444),
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            item.fileSize,
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),

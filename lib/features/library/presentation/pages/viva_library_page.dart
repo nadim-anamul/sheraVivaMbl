@@ -13,7 +13,6 @@ class VivaLibraryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedExam = ref.watch(selectedExamTypeProvider);
-    final activeTab = ref.watch(libraryActiveTabProvider);
 
     String getTitle() {
       if (selectedExam != null) {
@@ -30,14 +29,7 @@ class VivaLibraryPage extends ConsumerWidget {
               : 'প্রাইমারি ভাইভা অভিজ্ঞতা',
         );
       }
-      switch (activeTab) {
-        case 1:
-          return 'চাকরির সার্কুলার (Circulars)';
-        case 2:
-          return 'পরীক্ষার ফলাফল (Results)';
-        default:
-          return 'ভাইভা লাইব্রেরি (Viva Library)';
-      }
+      return 'ভাইভা লাইব্রেরি';
     }
 
     return Scaffold(
@@ -69,21 +61,7 @@ class VivaLibraryPage extends ConsumerWidget {
       ),
       body: selectedExam != null
           ? _buildExperiencesFeed(context, ref, selectedExam)
-          : Column(
-              children: [
-                _buildSlidingTabBar(context, ref, activeTab),
-                Expanded(
-                  child: IndexedStack(
-                    index: activeTab,
-                    children: [
-                      _buildExamSelectionDashboard(context, ref),
-                      _buildCircularsTab(context, ref),
-                      _buildResultsTab(context, ref),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          : _buildExamSelectionDashboard(context, ref),
     );
   }
 

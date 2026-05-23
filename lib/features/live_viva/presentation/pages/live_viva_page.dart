@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:livekit_client/livekit_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/livekit_placeholder_gateway.dart';
+import '../../data/livekit_service.dart';
 import '../services/permission_preflight_service.dart';
 
 class LiveVivaPage extends StatefulWidget {
@@ -13,6 +16,7 @@ class LiveVivaPage extends StatefulWidget {
 class _LiveVivaPageState extends State<LiveVivaPage> {
   final _permissions = const PermissionPreflightService();
   final _gateway = LiveKitPlaceholderGateway();
+  LiveKitService? _gatewayRealService;
 
   bool _joining = false;
   bool _isActive = false;
@@ -23,6 +27,16 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
   int _callDuration = 0;
   Timer? _timer;
   
+  // Developer Sandbox Settings
+  final _serverUrlController = TextEditingController();
+  final _tokenController = TextEditingController();
+  bool _useLiveKitCloud = false;
+  String _liveKitStatus = '';
+
+  VideoTrack? _localVideoTrack;
+  VideoTrack? _remoteVideoTrack;
+  bool _isRealSpeaking = false;
+
   // High fidelity interview stages simulation
   int _currentSubtitleIndex = 0;
   final List<String> _mockSubtitles = [
@@ -34,8 +48,174 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
   ];
   Timer? _subtitleTimer;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadDeveloperSettings();
+  }
+
+  Future<void> _loadDeveloperSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Read from compile-time environment variables (passed via --dart-define)
+    const envUrl = String.fromEnvironment('LIVEKIT_URL');
+    const envToken = String.fromEnvironment('LIVEKIT_TOKEN');
+
+    setState(() {
+      final savedUrl = prefs.getString('livekit_server_url') ?? '';
+      _serverUrlController.text = savedUrl.isNotEmpty ? savedUrl : envUrl;
+
+      final savedToken = prefs.getString('livekit_token') ?? '';
+      _tokenController.text = savedToken.isNotEmpty ? savedToken : envToken;
+
+      _useLiveKitCloud = prefs.getBool('livekit_use_cloud') ?? 
+          (_serverUrlController.text.isNotEmpty && _tokenController.text.isNotEmpty);
+    });
+  }
+
+  Future<void> _saveDeveloperSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('livekit_server_url', _serverUrlController.text.trim());
+    await prefs.setString('livekit_token', _tokenController.text.trim());
+    await prefs.setBool('livekit_use_cloud', _useLiveKitCloud);
+  }
+
+  void _showDeveloperSettingsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.settings_suggest_rounded, color: Color(0xFF0F766E), size: 24),
+                          SizedBox(width: 8),
+                          Text(
+                            'লাইভকিট ক্লাউড সেটিংস (Sandbox)',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    title: const Text(
+                      'লাইভকিট ক্লাউড সক্রিয় করুন',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                    ),
+                    subtitle: const Text(
+                      'নিষ্ক্রিয় থাকলে ডেমো সিমুলেশন মোড চালু থাকবে।',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                    activeColor: const Color(0xFF0F766E),
+                    value: _useLiveKitCloud,
+                    onChanged: (val) {
+                      setModalState(() {
+                        _useLiveKitCloud = val;
+                      });
+                      setState(() {
+                        _useLiveKitCloud = val;
+                      });
+                      _saveDeveloperSettings();
+                    },
+                  ),
+                  if (_useLiveKitCloud) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _serverUrlController,
+                      decoration: InputDecoration(
+                        labelText: 'LiveKit Server URL',
+                        hintText: 'wss://your-project.livekit.cloud',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.link_rounded),
+                      ),
+                      onChanged: (val) {
+                        _saveDeveloperSettings();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _tokenController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Access Token',
+                        hintText: 'Paste generated LiveKit token here...',
+                        labelStyle: const TextStyle(fontSize: 13),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        prefixIcon: const Icon(Icons.key_rounded),
+                      ),
+                      onChanged: (val) {
+                        _saveDeveloperSettings();
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F766E),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.save_rounded),
+                    label: const Text('সংরক্ষণ করুন ও বন্ধ করুন', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      _saveDeveloperSettings();
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('সেটিংস সফলভাবে সংরক্ষিত হয়েছে'),
+                          backgroundColor: Color(0xFF0F766E),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _joinSession() async {
-    setState(() => _joining = true);
+    setState(() {
+      _joining = true;
+      _liveKitStatus = '';
+    });
+    
     final granted = await _permissions.ensureCameraAndMicrophoneGranted();
     if (!granted) {
       if (mounted) {
@@ -56,16 +236,74 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
       return;
     }
 
-    await _gateway.joinRoom(roomName: 'mock-viva-room', token: 'mock-token');
+    if (_useLiveKitCloud && _serverUrlController.text.isNotEmpty && _tokenController.text.isNotEmpty) {
+      final realService = LiveKitService();
+      
+      realService.onStatusChanged = (status) {
+        if (mounted) {
+          setState(() {
+            _liveKitStatus = status;
+          });
+        }
+      };
 
-    if (mounted) {
-      setState(() {
-        _isActive = true;
-        _joining = false;
-        _callDuration = 0;
-        _currentSubtitleIndex = 0;
-      });
-      _startTimers();
+      realService.onTracksChanged = (local, remote) {
+        if (mounted) {
+          setState(() {
+            _localVideoTrack = local;
+            _remoteVideoTrack = remote;
+          });
+        }
+      };
+
+      realService.onInterviewerSpeakingChanged = (isSpeaking) {
+        if (mounted) {
+          setState(() {
+            _isRealSpeaking = isSpeaking;
+          });
+        }
+      };
+
+      try {
+        await realService.joinRealRoom(
+          serverUrl: _serverUrlController.text.trim(),
+          token: _tokenController.text.trim(),
+        );
+
+        if (mounted) {
+          setState(() {
+            _isActive = true;
+            _joining = false;
+            _callDuration = 0;
+            _gatewayRealService = realService;
+          });
+          _startTimers();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('লাইভকিট কানেকশন ব্যর্থ হয়েছে: $e'),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+          );
+          setState(() => _joining = false);
+        }
+        return;
+      }
+    } else {
+      _gatewayRealService = null;
+      await _gateway.joinRoom(roomName: 'mock-viva-room', token: 'mock-token');
+
+      if (mounted) {
+        setState(() {
+          _isActive = true;
+          _joining = false;
+          _callDuration = 0;
+          _currentSubtitleIndex = 0;
+        });
+        _startTimers();
+      }
     }
   }
 
@@ -79,27 +317,37 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
       }
     });
 
-    _subtitleTimer?.cancel();
-    _subtitleTimer = Timer.periodic(const Duration(seconds: 12), (timer) {
-      if (mounted) {
-        setState(() {
-          if (_currentSubtitleIndex < _mockSubtitles.length - 1) {
-            _currentSubtitleIndex++;
-          } else {
-            _subtitleTimer?.cancel();
-          }
-        });
-      }
-    });
+    if (_gatewayRealService == null) {
+      _subtitleTimer?.cancel();
+      _subtitleTimer = Timer.periodic(const Duration(seconds: 12), (timer) {
+        if (mounted) {
+          setState(() {
+            if (_currentSubtitleIndex < _mockSubtitles.length - 1) {
+              _currentSubtitleIndex++;
+            } else {
+              _subtitleTimer?.cancel();
+            }
+          });
+        }
+      });
+    }
   }
 
   void _leaveSession() {
     _timer?.cancel();
     _subtitleTimer?.cancel();
-    _gateway.leaveRoom();
+    
+    if (_gatewayRealService != null) {
+      _gatewayRealService!.leaveRoom();
+    } else {
+      _gateway.leaveRoom();
+    }
     
     setState(() {
       _isActive = false;
+      _localVideoTrack = null;
+      _remoteVideoTrack = null;
+      _liveKitStatus = '';
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -126,13 +374,35 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark elegant background for call page
+      backgroundColor: _isActive ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: _isActive
           ? null // Full screen experience during call
           : AppBar(
+              backgroundColor: const Color(0xFFF8FAFC),
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF1E293B), size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
               title: const Text(
                 'Live Video Viva',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                  fontSize: 18,
+                ),
+              ),
+              actions: [
+                if (!_isActive)
+                  IconButton(
+                    icon: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF0F766E), size: 22),
+                    tooltip: 'Developer Settings',
+                    onPressed: _showDeveloperSettingsModal,
+                  ),
+                const SizedBox(width: 8),
+              ],
+              shape: const Border(
+                bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
               ),
             ),
       body: _isActive ? _buildActiveCallScreen() : _buildPreflightScreen(),
@@ -149,7 +419,14 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
         children: [
           // 1. Interviewer View (Takes full screen as primary focus)
           Positioned.fill(
-            child: _buildInterviewerView(isInterviewerSpeaking),
+            child: _remoteVideoTrack != null
+                ? VideoTrackRenderer(
+                    _remoteVideoTrack!,
+                    fit: VideoViewFit.cover,
+                  )
+                : _buildInterviewerView(
+                    _gatewayRealService != null ? _isRealSpeaking : isInterviewerSpeaking,
+                  ),
           ),
 
           // 2. Gradient overlays for better UI visibility
@@ -264,41 +541,47 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                 child: Stack(
                   children: [
                     if (_isCameraOn)
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF334155), Color(0xFF0F172A)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.person_rounded, color: Colors.white70, size: 40),
-                              const SizedBox(height: 8),
-                              // Pulse microphone level indicator
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(3, (index) {
-                                  final isActive = !_isMuted && (_callDuration % 3 == index);
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 250),
-                                    width: 3,
-                                    height: isActive ? 12.0 : 4.0,
-                                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                                    decoration: BoxDecoration(
-                                      color: isActive ? const Color(0xFF2DD4BF) : Colors.white24,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  );
-                                }),
+                      _localVideoTrack != null
+                          ? VideoTrackRenderer(
+                              _localVideoTrack!,
+                              fit: VideoViewFit.cover,
+                              mirrorMode: VideoViewMirrorMode.mirror,
+                            )
+                          : Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF334155), Color(0xFF0F172A)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      )
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.person_rounded, color: Colors.white70, size: 40),
+                                    const SizedBox(height: 8),
+                                    // Pulse microphone level indicator
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: List.generate(3, (index) {
+                                        final isActive = !_isMuted && (_callDuration % 3 == index);
+                                        return AnimatedContainer(
+                                          duration: const Duration(milliseconds: 250),
+                                          width: 3,
+                                          height: isActive ? 12.0 : 4.0,
+                                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                          decoration: BoxDecoration(
+                                            color: isActive ? const Color(0xFF2DD4BF) : Colors.white24,
+                                            borderRadius: BorderRadius.circular(2),
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
                     else
                       Container(
                         color: Colors.black54,
@@ -354,15 +637,21 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                           width: 6,
                           height: 6,
                           decoration: BoxDecoration(
-                            color: isInterviewerSpeaking ? const Color(0xFF2DD4BF) : Colors.white30,
+                            color: (_gatewayRealService != null ? _isRealSpeaking : isInterviewerSpeaking)
+                                ? const Color(0xFF2DD4BF)
+                                : Colors.white30,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isInterviewerSpeaking ? 'বোর্ড চেয়ারম্যান (কথা বলছেন)' : 'বোর্ড চেয়ারম্যান (নীরব)',
+                          _gatewayRealService != null
+                              ? (_isRealSpeaking ? 'পরীক্ষক (কথা বলছেন)' : 'পরীক্ষক (নীরব)')
+                              : (isInterviewerSpeaking ? 'বোর্ড চেয়ারম্যান (কথা বলছেন)' : 'বোর্ড চেয়ারম্যান (নীরব)'),
                           style: TextStyle(
-                            color: isInterviewerSpeaking ? const Color(0xFF2DD4BF) : Colors.white30,
+                            color: (_gatewayRealService != null ? _isRealSpeaking : isInterviewerSpeaking)
+                                ? const Color(0xFF2DD4BF)
+                                : Colors.white30,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -371,7 +660,11 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _mockSubtitles[_currentSubtitleIndex],
+                      _gatewayRealService != null
+                          ? (_isRealSpeaking 
+                              ? '📢 পরীক্ষক কথা বলছেন... দয়া করে মনোযোগ দিয়ে শুনুন ও উত্তর দিন।' 
+                              : '💤 লাইভকিট কানেকশন সক্রিয়। পরীক্ষকের কথা শোনার জন্য অপেক্ষা করুন...')
+                          : _mockSubtitles[_currentSubtitleIndex],
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12.5,
@@ -413,7 +706,15 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                     activeColor: const Color(0xFF334155),
                     inactiveColor: const Color(0xFFDC2626),
                     label: _isMuted ? 'আনমিউট' : 'মিউট',
-                    onPressed: () => setState(() => _isMuted = !_isMuted),
+                    onPressed: () {
+                      final muteState = !_isMuted;
+                      setState(() => _isMuted = muteState);
+                      if (_gatewayRealService != null) {
+                        _gatewayRealService!.toggleMicrophone(!muteState);
+                      } else {
+                        _gateway.toggleMicrophone(!muteState);
+                      }
+                    },
                   ),
 
                   // Camera Toggle
@@ -423,7 +724,15 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                     activeColor: const Color(0xFF334155),
                     inactiveColor: const Color(0xFF64748B),
                     label: _isCameraOn ? 'ক্যাম অফ' : 'ক্যাম অন',
-                    onPressed: () => setState(() => _isCameraOn = !_isCameraOn),
+                    onPressed: () {
+                      final camState = !_isCameraOn;
+                      setState(() => _isCameraOn = camState);
+                      if (_gatewayRealService != null) {
+                        _gatewayRealService!.toggleCamera(camState);
+                      } else {
+                        _gateway.toggleCamera(camState);
+                      }
+                    },
                   ),
 
                   // Audio Route Toggle
@@ -593,19 +902,19 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                 height: 200,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                    colors: [Color(0xFF0F766E), Color(0xFF134E4A)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: const Color(0xFF0F766E).withOpacity(0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     )
                   ],
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.3), width: 1),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
@@ -630,7 +939,7 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.black54,
+                            color: Colors.black38,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -679,6 +988,13 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
                 ),
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -721,24 +1037,104 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
               // Join Room Button
               FilledButton.icon(
                 onPressed: _joining ? null : _joinSession,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF0F766E),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
                 icon: _joining
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                          strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Icon(Icons.video_call_rounded),
+                    : const Icon(Icons.video_call_rounded, size: 22),
                 label: const Text(
                   'মক ভাইভা রুমে যুক্ত হোন',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 0.2),
                 ),
               ),
+              _buildStatusBanner(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner() {
+    if (_liveKitStatus.isEmpty) return const SizedBox.shrink();
+
+    final isError = _liveKitStatus.contains('ব্যর্থ') || 
+                    _liveKitStatus.contains('Exception') || 
+                    _liveKitStatus.contains('invalid');
+
+    if (isError) {
+      return Container(
+        margin: const EdgeInsets.only(top: 16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2), // Soft red background
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFCA5A5)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _liveKitStatus,
+                style: const TextStyle(
+                  color: Color(0xFF991B1B), // Dark red text
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4), // Soft green background
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF15803D)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _liveKitStatus,
+              style: const TextStyle(
+                color: Color(0xFF166534), // Dark green text
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -751,9 +1147,9 @@ class _LiveVivaPageState extends State<LiveVivaPage> {
           height: 64,
           width: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF0F766E).withOpacity(0.12),
+            color: Colors.white.withOpacity(0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFF0D9488).withOpacity(0.3), width: 2),
+            border: Border.all(color: Colors.white30, width: 2),
           ),
           child: const Center(
             child: Icon(

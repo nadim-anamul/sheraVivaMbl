@@ -21,59 +21,67 @@ class PdfViewerPage extends StatefulWidget {
 
 class _PdfViewerPageState extends State<PdfViewerPage> {
   final PdfViewerController _pdfViewerController = PdfViewerController();
+  PdfTextSearchResult _searchResult = PdfTextSearchResult();
+  final TextEditingController _searchController = TextEditingController();
+  
+  bool _isSearchActive = false;
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    _pdfViewerController.dispose();
+    super.dispose();
+  }
+
+  void _searchPDF(String text) {
+    if (text.isEmpty) {
+      _searchResult.clear();
+      setState(() {});
+      return;
+    }
+    
+    // Perform high-performance text search inside PDF
+    _searchResult = _pdfViewerController.searchText(text);
+    _searchResult.addListener(_onSearchProgress);
+  }
+
+  void _onSearchProgress() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _nextSearchResult() {
+    if (_searchResult.hasResult) {
+      _searchResult.nextInstance();
+      setState(() {});
+    }
+  }
+
+  void _previousSearchResult() {
+    if (_searchResult.hasResult) {
+      _searchResult.previousInstance();
+      setState(() {});
+    }
+  }
+
+  void _cancelSearch() {
+    _searchResult.removeListener(_onSearchProgress);
+    setState(() {
+      _isSearchActive = false;
+      _searchController.clear();
+      _searchResult.clear();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF1E293B)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${widget.organization} • ${widget.publishDate}',
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.zoom_in_rounded, color: Color(0xFF0F766E), size: 22),
-            onPressed: () => _pdfViewerController.zoomLevel = (_pdfViewerController.zoomLevel + 0.25).clamp(1.0, 3.0),
-          ),
-          IconButton(
-            icon: const Icon(Icons.zoom_out_rounded, color: Color(0xFF0F766E), size: 22),
-            onPressed: () => _pdfViewerController.zoomLevel = (_pdfViewerController.zoomLevel - 0.25).clamp(1.0, 3.0),
-          ),
-        ],
-        shape: const Border(
-          bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
-        ),
-      ),
+      appBar: _isSearchActive ? _buildSearchAppBar() : _buildDefaultAppBar(),
       body: Stack(
         children: [
           if (!_hasError)
@@ -183,6 +191,123 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildDefaultAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF1E293B)),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${widget.organization} • ${widget.publishDate}',
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search_rounded, color: Color(0xFF0F766E), size: 22),
+          tooltip: 'খুঁজুন',
+          onPressed: () => setState(() => _isSearchActive = true),
+        ),
+        IconButton(
+          icon: const Icon(Icons.zoom_in_rounded, color: Color(0xFF0F766E), size: 22),
+          tooltip: 'জুম ইন',
+          onPressed: () => _pdfViewerController.zoomLevel = (_pdfViewerController.zoomLevel + 0.25).clamp(1.0, 3.0),
+        ),
+        IconButton(
+          icon: const Icon(Icons.zoom_out_rounded, color: Color(0xFF0F766E), size: 22),
+          tooltip: 'জুম আউট',
+          onPressed: () => _pdfViewerController.zoomLevel = (_pdfViewerController.zoomLevel - 0.25).clamp(1.0, 3.0),
+        ),
+      ],
+      shape: const Border(
+        bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildSearchAppBar() {
+    final showNavigation = _searchResult.hasResult && _searchResult.totalInstanceCount > 0;
+    
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E293B)),
+        onPressed: _cancelSearch,
+      ),
+      title: TextField(
+        controller: _searchController,
+        autofocus: true,
+        textInputAction: TextInputAction.search,
+        onChanged: _searchPDF,
+        onSubmitted: _searchPDF,
+        style: const TextStyle(
+          color: Color(0xFF1E293B),
+          fontSize: 15,
+        ),
+        decoration: const InputDecoration(
+          hintText: 'পিডিএফ-এ খুঁজুন...',
+          border: InputBorder.none,
+          hintStyle: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 14,
+          ),
+        ),
+      ),
+      actions: [
+        if (showNavigation) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            child: Text(
+              '${_searchResult.currentInstanceIndex}/${_searchResult.totalInstanceCount}',
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.keyboard_arrow_up_rounded, color: Color(0xFF0F766E), size: 26),
+            onPressed: _previousSearchResult,
+          ),
+          IconButton(
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF0F766E), size: 26),
+            onPressed: _nextSearchResult,
+          ),
+        ],
+        IconButton(
+          icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B), size: 22),
+          onPressed: _cancelSearch,
+        ),
+      ],
+      shape: const Border(
+        bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1),
       ),
     );
   }

@@ -205,9 +205,20 @@ class VivaHistoryPage extends StatelessWidget {
   }
 
   Widget _buildHistoryItemCard(BuildContext context, _MockHistoryItem item) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(left: 14),
-      elevation: 3,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
