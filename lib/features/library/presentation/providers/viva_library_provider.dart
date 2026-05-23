@@ -2,8 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/job_circular_model.dart';
 import '../../data/models/job_result_model.dart';
+import '../../data/models/viva_advice_model.dart';
 import '../../data/models/viva_exam_config_model.dart';
 import '../../data/models/viva_experience_model.dart';
+import '../../data/models/viva_rules_model.dart';
 import '../../data/services/viva_library_service.dart';
 
 // Tab selection: 0 = ভাইভা লাইব্রেরি, 1 = নতুন সার্কুলার, 2 = পরীক্ষার ফলাফল
@@ -76,6 +78,18 @@ final filteredJobResultsProvider = Provider<AsyncValue<List<JobResultModel>>>((r
 // Service provider
 final vivaLibraryServiceProvider = Provider<VivaLibraryService>((ref) {
   return VivaLibraryService();
+});
+
+// Dynamic viva advice provider
+final vivaAdviceProvider = FutureProvider<List<VivaAdviceCategoryModel>>((ref) async {
+  final service = ref.watch(vivaLibraryServiceProvider);
+  return service.loadAdvice();
+});
+
+// Dynamic viva board rules provider
+final vivaRulesProvider = FutureProvider<VivaRulesConfigModel>((ref) async {
+  final service = ref.watch(vivaLibraryServiceProvider);
+  return service.loadRules();
 });
 
 // Central configuration provider

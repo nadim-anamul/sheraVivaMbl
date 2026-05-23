@@ -276,9 +276,10 @@ class _VivaTranscriptPageState extends State<VivaTranscriptPage> {
   // --- 4. CHAT BUBBLE VIEW ---
   Widget _buildChatBubble(TranscriptTurn turn, Color themeColor) {
     final bool isCandidate = turn.speaker.toLowerCase() == 'candidate';
+    final Color textColor = isCandidate ? Colors.white : const Color(0xFF1E293B);
 
     // Highlight text segments matching the query
-    Widget textWidget = _buildHighlightedText(turn.text);
+    Widget textWidget = _buildHighlightedText(turn.text, textColor);
 
     if (isCandidate) {
       // Candidate: Right aligned, Teal/Blue gradient
@@ -419,8 +420,8 @@ class _VivaTranscriptPageState extends State<VivaTranscriptPage> {
   }
 
   // Helper function to highlight text matching local query
-  Widget _buildHighlightedText(String text) {
-    if (_searchQuery.isEmpty) return Text(text);
+  Widget _buildHighlightedText(String text, Color textColor) {
+    if (_searchQuery.isEmpty) return Text(text, style: TextStyle(color: textColor));
 
     final String query = _searchQuery.toLowerCase();
     final String lowercaseText = text.toLowerCase();
@@ -455,7 +456,7 @@ class _VivaTranscriptPageState extends State<VivaTranscriptPage> {
 
     return RichText(
       text: TextSpan(
-        style: const TextStyle(fontSize: 14.5, height: 1.45),
+        style: TextStyle(fontSize: 14.5, height: 1.45, color: textColor),
         children: spans,
       ),
     );

@@ -18,6 +18,6 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('সেরা ভিভা লগইন'), findsOneWidget);
+    expect(find.text('সেরা ভাইভা লগইন'), findsOneWidget);
   });
 }

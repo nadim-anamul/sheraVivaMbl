@@ -1,59 +1,123 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class VivaRulesPage extends StatelessWidget {
+import '../providers/viva_library_provider.dart';
+
+class VivaRulesPage extends ConsumerWidget {
   const VivaRulesPage({super.key});
 
-  static const List<String> _dos = <String>[
-    'বোর্ড রুমে প্রবেশের পূর্বে সালাম বা সম্মানসূচক অভিবাদন দিন।',
-    'বসার পর উত্তর দেওয়ার সময় প্রতিটি বোর্ড মেম্বারের সাথে চোখ মিলিয়ে (eye contact) কথা বলুন।',
-    'যা জানেন না, অতিরিক্ত না বাড়িয়ে স্পষ্টভাবে বলুন: "এই মুহূর্তে বিষয়টি আমার জানা নেই"।',
-    'উত্তরে প্রাসঙ্গিক তথ্য, পরিসংখ্যান ও বাস্তব উদাহরণ দেওয়ার চেষ্টা করুন।',
-    'মার্জিত ও পরিষ্কার ফরমাল পোশাক পরিধান করুন।',
-  ];
-
-  static const List<String> _donts = <String>[
-    'অতিরিক্ত হাত নেড়ে বা চেয়ারে হেলে কথা বলা এড়িয়ে চলুন।',
-    'বোর্ড সদস্যের কথা শেষ হওয়ার পূর্বে কোনোভাবেই উত্তর শুরু করবেন না।',
-    'রাজনৈতিক বা সংবেদনশীল প্রশ্নে চরম কোনো ব্যক্তিগত অবস্থান নেবেন না।',
-    'মোবাইল ফোন সম্পূর্ণ সাইলেন্ট বা বন্ধ না রেখে কোনোভাবেই রুমে প্রবেশ করবেন না।',
-    'জানার ভান করে ভুল বা বিভ্রান্তিকর তথ্য বোর্ডকে দেওয়ার চেষ্টা করবেন না।',
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'বোর্ড আচরণবিধি (Viva Rules)',
-          style: TextStyle(fontWeight: FontWeight.bold),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rulesAsync = ref.watch(vivaRulesProvider);
+
+    return rulesAsync.when(
+      data: (config) {
+        Color dosColor = const Color(0xFF057857);
+        Color dosBgColor = const Color(0xFFECFDF5);
+        try {
+          if (config.dos.color.isNotEmpty) {
+            final hex = config.dos.color.replaceAll('#', '');
+            dosColor = Color(int.parse('FF$hex', radix: 16));
+          }
+          if (config.dos.bgColor.isNotEmpty) {
+            final hex = config.dos.bgColor.replaceAll('#', '');
+            dosBgColor = Color(int.parse('FF$hex', radix: 16));
+          }
+        } catch (_) {}
+
+        Color dontsColor = const Color(0xFFDC2626);
+        Color dontsBgColor = const Color(0xFFFEF2F2);
+        try {
+          if (config.donts.color.isNotEmpty) {
+            final hex = config.donts.color.replaceAll('#', '');
+            dontsColor = Color(int.parse('FF$hex', radix: 16));
+          }
+          if (config.donts.bgColor.isNotEmpty) {
+            final hex = config.donts.bgColor.replaceAll('#', '');
+            dontsBgColor = Color(int.parse('FF$hex', radix: 16));
+          }
+        } catch (_) {}
+
+        IconData generalTipIcon = Icons.tips_and_updates_outlined;
+        if (config.generalTip.icon == 'tips_and_updates_outlined') {
+          generalTipIcon = Icons.tips_and_updates_outlined;
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'বোর্ড আচরণবিধি (Viva Rules)',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          body: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            children: <Widget>[
+              _RuleBlock(
+                title: config.dos.title,
+                icon: config.dos.icon == 'check_circle_rounded' ? Icons.check_circle_rounded : Icons.check_circle_outline_rounded,
+                rules: config.dos.rules,
+                themeColor: dosColor,
+                bgColor: dosBgColor,
+              ),
+              const SizedBox(height: 20),
+              
+              _RuleBlock(
+                title: config.donts.title,
+                icon: config.donts.icon == 'cancel_rounded' ? Icons.cancel_rounded : Icons.cancel_outlined,
+                rules: config.donts.rules,
+                themeColor: dontsColor,
+                bgColor: dontsBgColor,
+              ),
+              const SizedBox(height: 20),
+              
+              if (config.generalTip.content.isNotEmpty)
+                _GeneralTipCard(
+                  title: config.generalTip.title,
+                  icon: generalTipIcon,
+                  content: config.generalTip.content,
+                ),
+            ],
+          ),
+        );
+      },
+      loading: () => Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'বোর্ড আচরণবিধি (Viva Rules)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0F766E)),
+          ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        children: const <Widget>[
-          // DOs Section
-          _RuleBlock(
-            title: 'যা করবেন (Do)',
-            icon: Icons.check_circle_rounded,
-            rules: _dos,
-            themeColor: Color(0xFF057857), // emerald-700
-            bgColor: Color(0xFFECFDF5), // emerald-50
+      error: (err, stack) => Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'বোর্ড আচরণবিধি (Viva Rules)',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 20),
-          
-          // DONTs Section
-          _RuleBlock(
-            title: 'যা বর্জন করবেন (Don\'t)',
-            icon: Icons.cancel_rounded,
-            rules: _donts,
-            themeColor: Color(0xFFDC2626), // red-600
-            bgColor: Color(0xFFFEF2F2), // red-50
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.red, size: 40),
+                const SizedBox(height: 12),
+                Text(
+                  'নিয়মাবলী লোড করা সম্ভব হয়নি: $err',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13),
+                ),
+              ],
+            ),
           ),
-          SizedBox(height: 20),
-          
-          // Interactive Board Tip Card
-          _GeneralTipCard(),
-        ],
+        ),
       ),
     );
   }
@@ -92,7 +156,6 @@ class _RuleBlock extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          // Header Bar
           Container(
             decoration: BoxDecoration(
               color: themeColor.withOpacity(0.08),
@@ -117,8 +180,6 @@ class _RuleBlock extends StatelessWidget {
               ],
             ),
           ),
-          
-          // Rules List
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -162,7 +223,15 @@ class _RuleBlock extends StatelessWidget {
 }
 
 class _GeneralTipCard extends StatelessWidget {
-  const _GeneralTipCard();
+  const _GeneralTipCard({
+    required this.title,
+    required this.icon,
+    required this.content,
+  });
+
+  final String title;
+  final IconData icon;
+  final String content;
 
   @override
   Widget build(BuildContext context) {
@@ -186,24 +255,24 @@ class _GeneralTipCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.tips_and_updates_outlined, color: Colors.white, size: 28),
+          Icon(icon, color: Colors.white, size: 28),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'বিশেষ পরামর্শ',
-                  style: TextStyle(
+                  title,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'মনে রাখবেন, ভাইভা বোর্ড আপনার জ্ঞানের গভীরতা যেমন দেখে, তার চেয়ে বেশি আপনার ব্যক্তিত্ব, বিচার-বিবেচনা, তাৎক্ষণিক সিদ্ধান্ত গ্রহণের ক্ষমতা ও মার্জিত আচরণ মূল্যায়ন করে। আত্মবিশ্বাসী থাকুন!',
-                  style: TextStyle(
+                  content,
+                  style: const TextStyle(
                     color: Color(0xFFE2E8F0),
                     fontSize: 12,
                     height: 1.45,

@@ -134,10 +134,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   ),
                                   const SizedBox(height: 16),
                                   
-                                  // Header Title - EXACTLY matches 'সেরা ভিভা লগইন'
+                                  // Header Title - EXACTLY matches 'সেরা ভাইভা লগইন'
                                   const Center(
                                     child: Text(
-                                      'সেরা ভিভা লগইন',
+                                      'সেরা ভাইভা লগইন',
                                       style: TextStyle(
                                         color: Color(0xFF0F766E),
                                         fontSize: 26,

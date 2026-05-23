@@ -22,7 +22,7 @@ class _AIConversationPageState extends State<AIConversationPage> {
   final List<Map<String, String>> _mockChat = [
     {
       'role': 'AI',
-      'message': 'আসসালামু আলাইকুম। সেরা ভিভা এআই ইন্টারভিউ সেশনে আপনাকে স্বাগতম। আমি আপনার ভাইভা গ্রহণ করব।'
+      'message': 'আসসালামু আলাইকুম। সেরা ভাইভা এআই ইন্টারভিউ সেশনে আপনাকে স্বাগতম। আমি আপনার ভাইভা গ্রহণ করব।'
     },
     {
       'role': 'AI',

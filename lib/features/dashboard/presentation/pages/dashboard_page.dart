@@ -28,7 +28,7 @@ class DashboardPage extends ConsumerWidget {
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: MediaQuery.paddingOf(context).top + 220,
+                  bottom: 0,
                   child: const _CurvedHeader(),
                 ),
                 
@@ -150,7 +150,7 @@ class DashboardPage extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const Text(
-          'সেরা ভিভা',
+          'সেরা ভাইভা',
           style: TextStyle(
             color: Colors.white,
             fontSize: 22,

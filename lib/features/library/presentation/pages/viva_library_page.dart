@@ -973,6 +973,7 @@ class VivaLibraryPage extends ConsumerWidget {
                       child: Container(
                         height: 40,
                         alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 200),
                           style: TextStyle(
@@ -981,7 +982,13 @@ class VivaLibraryPage extends ConsumerWidget {
                             color: isSelected ? const Color(0xFF0F766E) : const Color(0xFF64748B),
                             fontFamily: 'Inter',
                           ),
-                          child: Text(tabs[index]),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              tabs[index],
+                              maxLines: 1,
+                            ),
+                          ),
                         ),
                       ),
                     ),
